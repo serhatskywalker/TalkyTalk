@@ -192,6 +192,68 @@ class LLMPromptAdapter(Adapter[str]):
 
 talkytalk only produces signals. Downstream systems make decisions.
 
+## Roadmap
+
+### ✅ Completed (v0.1.0)
+- [x] Core pipeline architecture
+- [x] IntentPacket data structure
+- [x] VAD, Prosody, Emotion analyzers
+- [x] Intent, Timing predictors
+- [x] **Early intent prediction** (thinking while listening)
+- [x] **Turn-taking & overlap detection**
+- [x] **Behavior mapping layer** (Emotion → Action)
+- [x] **Comprehensive benchmark suite**
+- [x] Test infrastructure
+
+### 🔜 Planned
+- [ ] WebRTC VAD integration (production-grade)
+- [ ] Live microphone source (sounddevice)
+- [ ] Lightweight LID (CPU-only, low latency)
+- [ ] Heavy LID (wav2vec2, optional)
+- [ ] ASR integration (optional, downstream only)
+- [ ] LLM adapter examples (OpenAI, Anthropic)
+- [ ] Game adapter examples (Unity, Unreal)
+- [ ] WebSocket streaming
+- [ ] Comprehensive benchmarks with real audio
+
+## New in v0.1.0
+
+### 🧠 Early Intent Prediction
+```python
+from talkytalk.predictors import EarlyIntentPredictor
+
+# Produces hypotheses DURING speech
+# Tracks hypothesis stability
+# Computes interruptibility score
+```
+
+### 🗣️ Advanced Turn-Taking
+```python
+from talkytalk.predictors import TurnTakingPredictor
+
+# States: USER_SPEAKING, USER_PAUSING, TURN_YIELDED
+# Overlap probability estimation
+# Suggested wait time calculation
+```
+
+### 🎭 Behavior Mapping
+```python
+from talkytalk.behavior import BehaviorMapper, BehaviorMode
+
+mapper = BehaviorMapper(mode=BehaviorMode.TEACHER)
+signal = mapper.map(packet)
+# → response_strategy, suggested_tone, empathy_level
+```
+
+### ⚡ Benchmark Suite
+```python
+from talkytalk.benchmark import BenchmarkSuite
+
+suite = BenchmarkSuite(latency_budget_ms=10.0)
+result = suite.run("my_test", pipeline, source)
+# → latency stats, jitter, spike rate, realtime factor
+```
+
 ## Development
 
 ```bash
@@ -203,7 +265,14 @@ pytest tests/
 
 # Type check
 mypy talkytalk/
+
+# Run example
+python examples/basic_usage.py
 ```
+
+## Documentation
+
+See [DOCS.md](DOCS.md) for comprehensive technical documentation in Turkish.
 
 ## License
 
