@@ -9,7 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Literal
+from typing import Literal, Any
+
+PACKET_VERSION = "1.0"
 
 
 class Intent(str, Enum):
@@ -68,13 +70,17 @@ class Timing:
             object.__setattr__(self, 'speech_likelihood', max(0.0, min(1.0, self.speech_likelihood)))
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class IntentPacket:
     """
     The single, unified output of talkytalk.
     
     Every field is probabilistic. Nothing is final.
     Downstream systems consume this and make their own decisions.
+    
+    Attributes:
+        version: Packet schema version for backward compatibility
+        analysis_results: Raw analyzer outputs for advanced consumers
     """
     intent: Intent | str = Intent.UNKNOWN
     confidence: float = 0.0
@@ -84,6 +90,8 @@ class IntentPacket:
     timing: Timing = field(default_factory=Timing)
     frame_id: int = 0
     timestamp_ms: int = 0
+    version: str = PACKET_VERSION
+    analysis_results: dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self) -> None:
         if not (0.0 <= self.confidence <= 1.0):
@@ -119,6 +127,8 @@ class IntentPacket:
             'timing': self.timing,
             'frame_id': self.frame_id,
             'timestamp_ms': self.timestamp_ms,
+            'version': self.version,
+            'analysis_results': self.analysis_results,
         }
         current.update(kwargs)
         return IntentPacket(**current)

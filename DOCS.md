@@ -436,8 +436,8 @@ print(result.summary())
 pip install talkytalk
 
 # Geliştirici kurulumu
-git clone https://github.com/user/talkytalk
-cd talkytalk
+git clone https://github.com/serhatskywalker/TalkyTalk
+cd TalkyTalk
 pip install -e ".[dev]"
 
 # Audio desteği ile

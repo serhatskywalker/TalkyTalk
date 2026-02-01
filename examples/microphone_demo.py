@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🎤 talkytalk Microphone Demo
+talkytalk Microphone Demo
 
 Gerçek zamanlı mikrofon ile talkytalk'ı test edin.
 Konuşun ve pipeline'ın ürettiği sinyalleri görün.
@@ -40,7 +40,7 @@ def color(text: str, code: int) -> str:
     return f"\033[{code}m{text}\033[0m"
 
 
-def format_bar(value: float, width: int = 20, filled: str = "█", empty: str = "░") -> str:
+def format_bar(value: float, width: int = 20, filled: str = "#", empty: str = ".") -> str:
     """Create a visual bar."""
     filled_count = int(value * width)
     return filled * filled_count + empty * (width - filled_count)
@@ -64,16 +64,16 @@ def print_packet_live(packet, behavior_signal=None):
     confidence_bar = format_bar(packet.confidence)
     speech_bar = format_bar(packet.timing.speech_likelihood)
     
-    interrupt_icon = "✅" if packet.timing.interrupt_safe else "⏳"
-    paused_icon = "⏸️ " if packet.timing.user_paused else "🎤"
+    interrupt_icon = "[OK]" if packet.timing.interrupt_safe else "[..]"   
+    paused_icon = "[PAUSE]" if packet.timing.user_paused else "[MIC]"
     
     quadrant = packet.emotion.quadrant
     quadrant_emoji = {
-        "calm_positive": "😊",
-        "calm_negative": "😔",
-        "tense_positive": "😃",
-        "tense_negative": "😤",
-    }.get(quadrant, "😐")
+        "calm_positive": "[+]",
+        "calm_negative": "[-]",
+        "tense_positive": "[!+]",
+        "tense_negative": "[!-]",
+    }.get(quadrant, "[?]")
     
     print(f"\n{'='*60}")
     print(f"  Frame: {packet.frame_id:5d}  |  Time: {packet.timestamp_ms/1000:.1f}s")
@@ -93,12 +93,11 @@ def print_packet_live(packet, behavior_signal=None):
     
     early = packet.analysis_results.get("early_intent")
     if early:
-        data = early.data
-        interruptibility = data.get("interruptibility", 0)
-        stable = data.get("hypothesis_stable", False)
+        interruptibility = early.get("interruptibility", 0)
+        stable = early.get("hypothesis_stable", False)
         
         int_bar = format_bar(interruptibility)
-        stable_icon = "🔒" if stable else "🔄"
+        stable_icon = "[LOCK]" if stable else "[SPIN]"
         
         print(f"\n  {stable_icon} Early Intent")
         print(f"     Interruptibility: [{int_bar}] {interruptibility:.0%}")
@@ -106,17 +105,16 @@ def print_packet_live(packet, behavior_signal=None):
     
     turn = packet.analysis_results.get("turn_taking")
     if turn:
-        data = turn.data
-        state = data.get("state", "unknown")
-        overlap = data.get("overlap_probability", 0)
-        wait = data.get("suggested_wait_ms", 0)
+        state = turn.get("state", "unknown")
+        overlap = turn.get("overlap_probability", 0)
+        wait = turn.get("suggested_wait_ms", 0)
         
         state_emoji = {
-            "user_speaking": "🗣️",
-            "user_pausing": "💭",
-            "turn_yielded": "🔄",
-            "system_can_speak": "✅",
-        }.get(state, "❓")
+            "user_speaking": "[SPEAK]",
+            "user_pausing": "[THINK]",
+            "turn_yielded": "[YIELD]",
+            "system_can_speak": "[GO]",
+        }.get(state, "[?]")
         
         print(f"\n  {state_emoji} Turn-Taking: {state}")
         print(f"     Overlap risk: {overlap:.0%}")
@@ -126,7 +124,7 @@ def print_packet_live(packet, behavior_signal=None):
         strategy = behavior_signal.response_strategy.value
         tone = behavior_signal.suggested_tone
         
-        print(f"\n  🎭 Behavior Signal")
+        print(f"\n  [BEHAVIOR] Signal")
         print(f"     Strategy: {strategy}")
         print(f"     Tone: {tone}")
         print(f"     Soften: {behavior_signal.should_soften}")
@@ -135,7 +133,7 @@ def print_packet_live(packet, behavior_signal=None):
 
 def main():
     print("\n" + "="*60)
-    print("  🎤 talkytalk Microphone Demo")
+    print("  [MIC] talkytalk Microphone Demo")
     print("="*60)
     print("\n  Mikrofona konuşun, pipeline'ın sinyallerini görün.")
     print("  Ctrl+C ile durdurun.\n")
@@ -143,7 +141,7 @@ def main():
     try:
         from talkytalk.sources.microphone import MicrophoneSource, list_audio_devices
     except ImportError as e:
-        print(f"\n  ❌ Hata: {e}")
+        print(f"\n  [ERROR] Hata: {e}")
         print("\n  sounddevice yüklü değil. Yüklemek için:")
         print("    pip install sounddevice\n")
         return
@@ -169,8 +167,8 @@ def main():
     
     mapper = BehaviorMapper(mode=BehaviorMode.ASSISTANT)
     
-    print("\n  ✅ Pipeline hazır!")
-    print("  🎤 Kayıt başlıyor... (Ctrl+C ile durdurun)\n")
+    print("\n  [OK] Pipeline hazir!")
+    print("  [REC] Kayit basliyor... (Ctrl+C ile durdurun)\n")
     
     try:
         source = MicrophoneSource(
@@ -187,10 +185,10 @@ def main():
                 packet_count += 1
                 
     except KeyboardInterrupt:
-        print("\n\n  ⏹️  Kayıt durduruldu.")
-        print(f"  📊 Toplam {packet_count} paket işlendi.\n")
+        print("\n\n  [STOP] Kayit durduruldu.")
+        print(f"  [INFO] Toplam {packet_count} paket islendi.\n")
     except Exception as e:
-        print(f"\n  ❌ Hata: {e}\n")
+        print(f"\n  [ERROR] Hata: {e}\n")
         import traceback
         traceback.print_exc()
 

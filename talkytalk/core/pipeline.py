@@ -7,11 +7,29 @@ The pipeline orchestrates analyzers and predictors to produce IntentPackets.
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass, field
-from typing import Callable, AsyncIterator
+from typing import Callable, AsyncIterator, Iterator, Protocol, runtime_checkable
 import time
 
 from talkytalk.core.packet import IntentPacket, Emotion, Timing, Intent
+
+logger = logging.getLogger(__name__)
+
+
+@runtime_checkable
+class AsyncAudioSource(Protocol):
+    """Protocol for async audio sources."""
+    
+    async def frames(self) -> AsyncIterator:
+        """Yield audio frames asynchronously."""
+        ...
+    
+    async def close(self) -> None:
+        """Close the source."""
+        ...
+
+
 from talkytalk.core.stream import AudioFrame, AudioConfig, FrameBuffer, AudioSource
 from talkytalk.analyzers.base import Analyzer, AnalysisResult
 from talkytalk.predictors.base import Predictor, PredictionContext
@@ -51,6 +69,7 @@ class PipelineState:
             timing=self.timing,
             frame_id=frame_id,
             timestamp_ms=timestamp_ms,
+            analysis_results={k: v.data for k, v in self.analysis_results.items()},
         )
 
 
@@ -105,15 +124,19 @@ class Pipeline:
     
     def process_frame(self, frame: AudioFrame) -> IntentPacket | None:
         """
-        Process a single frame synchronously.
+        Process a single frame synchronously with fault tolerance.
         
         Returns IntentPacket if emit interval has passed, None otherwise.
+        Analyzer/predictor exceptions are logged but don't crash the pipeline.
         """
         self._buffer.push(frame)
         
         for analyzer in self._analyzers:
-            result = analyzer.analyze(frame, self._buffer, self._state)
-            self._state.analysis_results[analyzer.name] = result
+            try:
+                result = analyzer.analyze(frame, self._buffer, self._state)
+                self._state.analysis_results[analyzer.name] = result
+            except Exception as e:
+                logger.warning(f"Analyzer {analyzer.name} failed on frame {frame.frame_id}: {e}")
         
         context = PredictionContext(
             frame=frame,
@@ -123,7 +146,10 @@ class Pipeline:
         )
         
         for predictor in self._predictors:
-            predictor.predict(context, self._state)
+            try:
+                predictor.predict(context, self._state)
+            except Exception as e:
+                logger.warning(f"Predictor {predictor.name} failed on frame {frame.frame_id}: {e}")
         
         should_emit = (frame.timestamp_ms - self._last_emit_ms) >= self._config.emit_interval_ms
         
@@ -160,21 +186,48 @@ class Pipeline:
             self._running = False
             source.close()
     
-    def run_sync(self, source: AudioSource) -> list[IntentPacket]:
+    def run_sync(self, source: AudioSource) -> Iterator[IntentPacket]:
         """
-        Run the pipeline synchronously (for testing/batch processing).
+        Run the pipeline synchronously as an iterator.
         
-        Returns all emitted packets.
+        Yields IntentPackets as they are produced.
+        Use list(pipeline.run_sync(source)) for batch processing.
         """
-        packets: list[IntentPacket] = []
+        self._running = True
         
-        for frame in source.frames():
-            packet = self.process_frame(frame)
-            if packet is not None:
-                packets.append(packet)
+        try:
+            for frame in source.frames():
+                if not self._running:
+                    break
+                    
+                packet = self.process_frame(frame)
+                if packet is not None:
+                    yield packet
+        finally:
+            self._running = False
+            source.close()
+    
+    async def run_async(self, source: AsyncAudioSource) -> AsyncIterator[IntentPacket]:
+        """
+        Run the pipeline with a true async audio source.
         
-        source.close()
-        return packets
+        For sources that natively support async iteration (e.g., WebSocket streams).
+        """
+        self._running = True
+        
+        try:
+            async for frame in source.frames():
+                if not self._running:
+                    break
+                
+                packet = self.process_frame(frame)
+                if packet is not None:
+                    yield packet
+                
+                await asyncio.sleep(0)
+        finally:
+            self._running = False
+            await source.close()
     
     def stop(self) -> None:
         """Stop the pipeline."""
