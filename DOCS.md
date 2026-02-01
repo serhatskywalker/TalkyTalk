@@ -562,8 +562,9 @@ mypy talkytalk/
 
 ---
 
-## 🔑 Tasarım İlkeleri
+## 🔑 Tasarım İlkeleri (Non-Negotiable)
 
+### Temel Prensipler
 1. **Early wrong > Late right** - Erken hatalı tahmin, geç doğru tahminden iyidir
 2. **Silence is signal** - Sessizlik boşluk değil, sinyaldir
 3. **Probabilistic, not deterministic** - Her çıktı olasılıksaldır
@@ -572,8 +573,41 @@ mypy talkytalk/
 6. **Modular & swappable** - Her bileşen değiştirilebilir
 7. **ASR optional** - Metin olmadan da çalışır
 
+### Güçlü Tasarım Prensipleri
+| Prensip | Anlam |
+|---------|-------|
+| **Audio-first, Text-later** | Sistem sesi "metne çevirmek" için değil, davranış üretmek için dinler |
+| **Intent ≠ Meaning** | Niyet tahmini semantik anlamdan bağımsızdır |
+| **Partial truth > Full sentence** | %40 doğru erken sinyal, %100 doğru geç cümleden değerlidir |
+| **Every frame is a vote** | Tek karar yok, frame'ler hipotez biriktirir |
+| **No blocking ever** | Pipeline'da hiçbir bileşen ana akışı durduramaz |
+| **Realtime > Accuracy** | Offline doğruluk değil, canlı etkileşim kazanır |
+| **Human pacing matters** | 200ms erken cevap, 2s geç doğru cevaptan iyidir |
+| **Turn-taking is first-class** | Konuşma sırası, içerik kadar kritiktir |
+| **Interrupt is a feature** | Bölünebilirlik bilinçli tasarlanır |
+| **Emotion is modulation** | Duygu yönlendirir, karar vermez |
+
 ---
 
+## 🛣️ Gelecek Yol Haritası
+
+### 🔜 Yakın Gelecek (3-5 Adım)
+- **Adaptive thresholds** – Kullanıcıya göre öğrenen VAD / interrupt eşikleri
+- **Session memory (non-text)** – Son 10-30 saniyenin akustik davranış hafızası
+- **User speaking style fingerprint** – Tempo, pause, arousal profili
+- **Dynamic emit rate** – Yoğun konuşmada daha sık, sessizlikte daha seyrek emit
+- **Confidence decay** – Uzayan sessizlikte eski intent'lerin doğal ölmesi
+
+### 🚀 Vizyon (5-10 Adım)
+- **LLM-as-reactor, not brain** – LLM sadece karar uygulayıcı, beyin pipeline
+- **Cross-modal hooks** – Göz, yüz, gesture eklenebilir (zorunlu değil)
+- **Predict-before-speech** – Kullanıcı konuşmadan niyet ihtimali üretimi
+- **Multi-agent readiness** – Aynı pipeline birden fazla konuşmacıya ölçeklenir
+- **Hardware-aware pipelines** – Edge / mobile / embedded varyantlar
+- **Conversation physics** – Konuşma = kuvvetler, sürtünme, momentum
+
+---
+    
 ## 📜 Lisans
 
 MIT License

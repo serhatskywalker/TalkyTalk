@@ -1,6 +1,6 @@
 # talkytalk
 
-**Real-time behavioral speech signal processor**
+> **talkytalk, sesi metne çevirmek için değil; konuşmayı doğru anda, doğru şekilde bölmek ve yönlendirmek için tasarlanmış, gerçek zamanlı bir konuşma sinyal motorudur.**
 
 talkytalk produces probabilistic intent signals from streaming audio. It does not speak, decide, or respond. It only signals.
 
@@ -192,6 +192,22 @@ class LLMPromptAdapter(Adapter[str]):
 
 talkytalk only produces signals. Downstream systems make decisions.
 
+## Design Principles (Non-Negotiable)
+
+### Core Philosophy
+| Principle | Meaning |
+|-----------|----------|
+| **Audio-first, Text-later** | System listens to produce behavior, not to transcribe |
+| **Intent ≠ Meaning** | Intent prediction is independent of semantic meaning |
+| **Partial truth > Full sentence** | 40% correct early signal beats 100% correct late sentence |
+| **Every frame is a vote** | No single decision; frames accumulate hypotheses |
+| **No blocking ever** | No component can block the main pipeline flow |
+| **Realtime > Accuracy** | Live interaction wins over offline correctness |
+| **Human pacing matters** | 200ms early response beats 2s late correct answer |
+| **Turn-taking is first-class** | Speaking turn is as critical as content |
+| **Interrupt is a feature** | Interruptibility is designed, not accidental |
+| **Emotion is modulation** | Emotion guides, but doesn't decide |
+
 ## Roadmap
 
 ### ✅ Completed (v0.1.0)
@@ -205,16 +221,30 @@ talkytalk only produces signals. Downstream systems make decisions.
 - [x] **Comprehensive benchmark suite**
 - [x] Test infrastructure
 
-### 🔜 Planned
+### 🔜 Near Future (3-5 steps)
+- [ ] **Adaptive thresholds** – User-learning VAD / interrupt thresholds
+- [ ] **Session memory (non-text)** – Last 10-30s acoustic behavior memory
+- [ ] **User speaking style fingerprint** – Tempo, pause, arousal profile
+- [ ] **Dynamic emit rate** – More frequent during speech, less during silence
+- [ ] **Confidence decay** – Old intents naturally fade in extended silence
+
+### 🚀 Vision (5-10 steps)
+- [ ] **LLM-as-reactor, not brain** – LLM only executes, pipeline is the brain
+- [ ] **Cross-modal hooks** – Eye, face, gesture can plug in (not required)
+- [ ] **Predict-before-speech** – Intent probability before user speaks
+- [ ] **Multi-agent readiness** – Same pipeline scales to multiple speakers
+- [ ] **Hardware-aware pipelines** – Edge / mobile / embedded variants
+- [ ] **Conversation physics** – Speech as forces, friction, momentum
+
+### 🔧 Technical Backlog
 - [ ] WebRTC VAD integration (production-grade)
-- [ ] Live microphone source (sounddevice)
+- [x] Live microphone source (sounddevice)
 - [ ] Lightweight LID (CPU-only, low latency)
 - [ ] Heavy LID (wav2vec2, optional)
 - [ ] ASR integration (optional, downstream only)
 - [ ] LLM adapter examples (OpenAI, Anthropic)
 - [ ] Game adapter examples (Unity, Unreal)
 - [ ] WebSocket streaming
-- [ ] Comprehensive benchmarks with real audio
 
 ## New in v0.1.0
 
@@ -254,6 +284,18 @@ result = suite.run("my_test", pipeline, source)
 # → latency stats, jitter, spike rate, realtime factor
 ```
 
+## 🎤 Live Microphone Demo
+
+```bash
+# Install audio support
+pip install sounddevice
+
+# Run live demo
+python examples/microphone_demo.py
+```
+
+Speak into your microphone and see real-time intent signals!
+
 ## Development
 
 ```bash
@@ -263,11 +305,14 @@ pip install -e ".[dev]"
 # Run tests
 pytest tests/
 
+# Run simple test (no microphone needed)
+python examples/simple_test.py
+
 # Type check
 mypy talkytalk/
 
-# Run example
-python examples/basic_usage.py
+# Run microphone demo
+python examples/microphone_demo.py
 ```
 
 ## Documentation

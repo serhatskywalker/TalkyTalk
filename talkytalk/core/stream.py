@@ -22,14 +22,19 @@ class AudioConfig:
     dtype: str = "float32"
     
     @property
-    def frame_size(self) -> int:
-        """Samples per frame."""
+    def samples_per_frame(self) -> int:
+        """Number of audio samples per frame."""
         return int(self.sample_rate * self.frame_duration_ms / 1000)
+    
+    @property
+    def frame_size(self) -> int:
+        """Alias for samples_per_frame (deprecated, use samples_per_frame)."""
+        return self.samples_per_frame
     
     @property
     def bytes_per_frame(self) -> int:
         """Bytes per frame (assuming 16-bit PCM for raw)."""
-        return self.frame_size * self.channels * 2
+        return self.samples_per_frame * self.channels * 2
 
 
 @dataclass(slots=True)
@@ -85,7 +90,7 @@ class AudioFrame:
     def silence(cls, frame_id: int, timestamp_ms: int, config: AudioConfig) -> AudioFrame:
         """Create a silent frame."""
         return cls(
-            data=np.zeros(config.frame_size, dtype=np.float32),
+            data=np.zeros(config.samples_per_frame, dtype=np.float32),
             frame_id=frame_id,
             timestamp_ms=timestamp_ms,
             config=config,
